@@ -1,23 +1,32 @@
+from flask import Flask, request
+import requests
 import os
-import logging
-from telegram.ext import Application, CommandHandler
 
-logging.basicConfig(level=logging.INFO)
+TOKEN = os.environ.get("BOT_TOKEN")
+API_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-TOKEN = os.getenv("BOT_TOKEN")
+app = Flask(__name__)
 
-if not TOKEN:
-    raise RuntimeError("BOT_TOKEN NON TROVATO")
+@app.route("/")
+def home():
+    return "OK"
 
-async def start(update, context):
-    await update.message.reply_text("MasterWin ONLINE ✅")
+@app.route("/telegram/webhook", methods=["POST"])
+def webhook():
+    update = request.json
 
-def main():
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    logging.info("BOT AVVIATO")
-    app.run_polling()
+    if "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+
+        requests.post(f"{API_URL}/sendMessage", json={
+            "chat_id": chat_id,
+            "text": f"Hai scritto: {text}"
+        })
+
+    return "ok"
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=10000)
 
+  
